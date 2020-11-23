@@ -8,7 +8,8 @@ let y = 13;
 let board = [];
 
 let player = {
-    name: "substring(0,firebaseUser.email.indexOf('@'))",
+    //name: "substring(0,firebaseUser.email.indexOf('@'))",
+    name: "player.name",
     x: 0,
     y: 0,
     moves: 0,
@@ -34,7 +35,8 @@ let moveScoreBoard = [] //contains player object {player: name, moves: 000}
 $(function () {
     loadGame();
 })
-
+let cansavetime= false;
+let cansavemove = false;
 let myTime = null;
 
 export async function loadGame() {
@@ -42,7 +44,29 @@ export async function loadGame() {
     const $root = $('#root')
     timeScoreBoard = await getTimeBoard(player.level);
     moveScoreBoard = await getMoveBoard(player.level);
+    let timetable = document.createElement('table')
+    timetable.id = 'times'
+    let movetable = document.createElement('table')
+    movetable.id = 'moves'
+    let topDiv = document.createElement('div')
+    topDiv.id = 'topDiv'
+    topDiv.style = 'display: flex; flex-direction: row; align-content: space-between'
+    topDiv.innerHTML = (`<div id = 'timeboard' style = 'align-self: flex-start'><h1>Time: ${player.time}</h1></div>`)
+    topDiv.innerHTML += (`<button id = 'time'>Save Time</button>`)
+    topDiv.innerHTML += (`<button id = 'move'>Save Move</button>`)
+    topDiv.innerHTML += (`<div id = 'moveboard' style = ''><h1>Moves: ${player.moves}</h1></div>`)
+    $root.append(topDiv)
+    let breakCol2 = document.createElement('div')
+    breakCol2.class = 'break'
+    breakCol2.style = 'flex-basis:100%'
+    $root.append(breakCol2)
+    $root.append(timetable)
     $root.append(levelBuild(player.level))
+    $root.append(movetable)
+    let breakCol = document.createElement('div')
+    breakCol.class = 'break'
+    breakCol.style = 'flex-basis:100%'
+    $root.append(breakCol)
     console.log(timeScoreBoard);
     console.log(moveScoreBoard);
     timeTableGenerator();
@@ -58,6 +82,8 @@ export async function loadGame() {
         topTime();
         topMove();
     }, 10000);
+    cansavetime= false;
+    cansavemove = false;
     $(document).keydown(async function (e) {
         switch (e.keyCode) { // move to seperate function and make it return something
             case 39:
@@ -183,25 +209,22 @@ export async function loadGame() {
         }
     })
 
-    $root.append(`<div id = 'buttonPanel'>
+    $root.append(`<div id = 'buttonPanel' style='align-self: center'>
         <button id = 'previous'> Previous</button>
         <button id = 'reset'>Reset</button>
         <button id = 'next'>Next</button>
-        <button id = 'time'>Save Time</button>
-        <button id = 'move'>Save Move</button>
     </div>`)
-
-    $root.append(`<div id = 'moveboard'>
-        <h1>Moves: ${player.moves}</h1>
-    </div>`)
-
-    $root.append(`<div id = 'timeboard'>
-        <h1>Time: ${player.time}</h1>
-    </div>`)
-
+    
     const $scores = $('#scores');
-    $scores.append(`<div id = 'scorest'></div>`)
-    $scores.append(`<div id = 'scoresm'></div>`)
+
+    // place holder
+    let breakCol3 = document.createElement('div')
+    breakCol3.class = 'break'
+    breakCol3.style = 'flex-basis:100%'
+    $root.append(breakCol3)
+    
+    $root.append(`<div id = 'scorest'></div>`)
+    $root.append(`<div id = 'scoresm'></div>`)
 
     $root.on('click', "#previous", previousBoard);//self explantory
     $root.on('click', "#reset", resetBoard);
@@ -222,7 +245,7 @@ export const levelBuild = function (number) {
     tableDiv.setAttribute('id', 'board')
 
     let levelTable = document.createElement('table');
-    levelTable.style = 'display: inline-block'
+    levelTable.style = ''
     tableDiv.append(levelTable);
 
     //let level = getLevel();
@@ -290,7 +313,8 @@ export async function move(dirction) {
                         const $timeboard = $('#timeboard');
                         $timeboard.empty();
                         $timeboard.append(`<h1>Time: ${player.time}</h1>`);
-                        console.log(player.time);
+                        cansavetime= true;
+                        cansavemove = true;
                     }
                 }
 
@@ -329,7 +353,8 @@ export async function move(dirction) {
                         const $timeboard = $('#timeboard');
                         $timeboard.empty();
                         $timeboard.append(`<h1>Time: ${player.time}</h1>`);
-                        console.log(player.time);
+                        cansavetime= true;
+                        cansavemove = true;
                     }
                 }
 
@@ -367,7 +392,8 @@ export async function move(dirction) {
                         const $timeboard = $('#timeboard');
                         $timeboard.empty();
                         $timeboard.append(`<h1>Time: ${player.time}</h1>`);
-                        console.log(player.time);
+                        cansavetime= true;
+                        cansavemove = true;
                     }
                 }
 
@@ -406,7 +432,8 @@ export async function move(dirction) {
                         const $timeboard = $('#timeboard');
                         $timeboard.empty();
                         $timeboard.append(`<h1>Time: ${player.time}</h1>`);
-                        console.log(player.time);
+                        cansavetime= true;
+                        cansavemove = true;
                     }
                 }
 
@@ -471,6 +498,8 @@ export async function previousBoard() {
         moveTableGenerator();
         topTime();
         topMove();
+        cansavetime = false;
+        cansavemove = false;
     }
 }
 
@@ -495,6 +524,8 @@ export const resetBoard = function () {
     moveTableGenerator();
     topTime();
     topMove();
+    cansavetime = false;
+    cansavemove = false;
 }
 
 export async function nextLevel() {
@@ -523,6 +554,8 @@ export async function nextLevel() {
         moveTableGenerator();
         topTime();
         topMove();
+        cansavetime = false;
+        cansavemove = false;
     }
 }
 
@@ -534,126 +567,133 @@ export async function timeUpdateBoard() {
         "player": "player.name",
         "time": player.time,
     }
-    
-    await updateBoard(player.level, "time", timeScoreBoard)
-    timeScoreBoard = await getTimeBoard(player.level);
-    //let timeDiv = document.createElement("div")
-    //timeDiv.id = "times"
+    if(cansavetime == true){
+        await updateBoard(player.level, "time", timeScoreBoard)
+        timeScoreBoard = await getTimeBoard(player.level);
+        //let timeDiv = document.createElement("div")
+        //timeDiv.id = "times"
 
-    timeScoreBoard.push(test)
-    timeScoreBoard.sort(function(a,b) {
-        return a.time - b.time
-    })
+        timeScoreBoard.push(test)
+        timeScoreBoard.sort(function(a,b) {
+            return a.time - b.time
+        })
 
-    console.log(timeScoreBoard)
-    let timeTable = document.createElement("table")
-    timeTable.id = "times"
-    timeTable.style = "border: 2px solid black;border-collapse: collapse;width: 15%; background-color: powderblue; float: left; text-align: center"
-    //timeDiv.append(timeTable)
-    let timeRowHeader = document.createElement("tr")
-    timeRowHeader.style = "background-color: blue; font-family: sans-serif;color: white"
-    let timeHeader0 = document.createElement("th")
-    timeHeader0.innerText = ""
-    let timeHeader1 = document.createElement("th")
-    timeHeader1.innerText = "Player"
-    let timeHeader2 = document.createElement("th")
-    timeHeader2.innerText = "Time"
-    
-    timeRowHeader.append(timeHeader0)
-    timeRowHeader.append(timeHeader1)
-    timeRowHeader.append(timeHeader2)
-    timeTable.append(timeRowHeader)
-    
-    /*
-    lettimeTable2 = document.createElement("ol")
-    timeTable2.id = "times"
-    timeTable2.style = "border: 2px solid black; width: 10%; background-color: white; float: left; text-align: center"
-    */
-    //timeScoreBoard.forEach(e => {
-
-    for (let i =0; i < 10 && i < timeScoreBoard.length; i++) {
-        let e = timeScoreBoard[i]
-        let timeRow = document.createElement("tr")
-        let timeData0 = document.createElement("td")
-        timeData0.innerText = `${i+1}`
-        let timeData1 = document.createElement("td")
-        timeData1.innerText = `${e.player}`
-        let timeData2 = document.createElement("td")
-        timeData2.innerText = `${e.time}`
-        timeRow.append(timeData0)
-        timeRow.append(timeData1)
-        timeRow.append(timeData2)
-        timeTable.append(timeRow)
-        /** 
-        timeRow2 = document.createElement("li")
-        timeRow2.innerText = `${e.player} ${e.time}`
-        timeTable2.append(timeRow2)
+        console.log(timeScoreBoard)
+        let timeTable = document.createElement("table")
+        timeTable.id = "times"
+        timeTable.style = "border: 2px solid black;border-collapse: collapse;width: 15%; background-color: powderblue; text-align: center"
+        //timeDiv.append(timeTable)
+        let timeRowHeader = document.createElement("tr")
+        timeRowHeader.style = "background-color: blue; font-family: sans-serif;color: white"
+        let timeHeader0 = document.createElement("th")
+        timeHeader0.innerText = ""
+        let timeHeader1 = document.createElement("th")
+        timeHeader1.innerText = "Player"
+        let timeHeader2 = document.createElement("th")
+        timeHeader2.innerText = "Time"
+        
+        timeRowHeader.append(timeHeader0)
+        timeRowHeader.append(timeHeader1)
+        timeRowHeader.append(timeHeader2)
+        timeTable.append(timeRowHeader)
+        
+        /*
+        lettimeTable2 = document.createElement("ol")
+        timeTable2.id = "times"
+        timeTable2.style = "border: 2px solid black; width: 10%; background-color: white; float: left; text-align: center"
         */
-    //});
+        //timeScoreBoard.forEach(e => {
+
+        for (let i =0; i < 10 && i < timeScoreBoard.length; i++) {
+            let e = timeScoreBoard[i]
+            let timeRow = document.createElement("tr")
+            let timeData0 = document.createElement("td")
+            timeData0.innerText = `${i+1}`
+            let timeData1 = document.createElement("td")
+            timeData1.innerText = `${e.player}`
+            let timeData2 = document.createElement("td")
+            timeData2.innerText = `${e.time}`
+            timeRow.append(timeData0)
+            timeRow.append(timeData1)
+            timeRow.append(timeData2)
+            timeTable.append(timeRow)
+            /** 
+            timeRow2 = document.createElement("li")
+            timeRow2.innerText = `${e.player} ${e.time}`
+            timeTable2.append(timeRow2)
+            */
+        //});
+        }
+        document.getElementById("times").replaceWith(timeTable)
+        cansavetime = false;
     }
-    document.getElementById("times").replaceWith(timeTable)
 }
 
 export async function moveUpdateBoard() {
     if (player.moves == 0)
         return null
-    moveScoreBoard.push({
-        "player": "player.name",
-        "moves": player.moves,
-    })
-
     
+    if(cansavemove == true){
+        moveScoreBoard.push({
+            "player": "player.name",
+            "moves": player.moves,
+        })
+        moveScoreBoard.sort(function(a,b) {
+            return a.moves - b.moves
+        })
 
-    await updateBoard(player.level, 'move', moveScoreBoard)
-    moveScoreBoard = await getMoveBoard(player.level);
-    console.log(moveScoreBoard);
+        await updateBoard(player.level, 'move', moveScoreBoard)
+        moveScoreBoard = await getMoveBoard(player.level);
+        console.log(moveScoreBoard);
 
-    moveScoreBoard.sort(function(a,b) {
-        return a.moves - b.moves
-    }) 
+        //let moveDiv = document.createElement("div")
+        //moveDiv.id = "moves"
+        let moveTable = document.createElement("table")
+        moveTable.id = "moves"
+        moveTable.style = "border: 2px solid black; width: 15%; border-collapse: collapse;background-color: tomato; text-align: center"
+        //moveDiv.append(moveTable)
+        let moveRowHeader = document.createElement("tr")
+        moveRowHeader.style = "background-color: red; color: white;font-family: sans-serif"
+        let moveHeader0 = document.createElement("th")
+        moveHeader0.innerText = ""
+        let moveHeader1 = document.createElement("th")
+        moveHeader1.innerText = "Player"
+        let moveHeader2 = document.createElement("th")
+        moveHeader2.innerText = "Moves"
+        moveRowHeader.append(moveHeader0)
+        moveRowHeader.append(moveHeader1)
+        moveRowHeader.append(moveHeader2)
+        moveTable.append(moveRowHeader)
 
-    //let moveDiv = document.createElement("div")
-    //moveDiv.id = "moves"
-    let moveTable = document.createElement("table")
-    moveTable.id = "moves"
-    moveTable.style = "border: 2px solid black; width: 15%; border-collapse: collapse;background-color: tomato; float: left; text-align: center"
-    //moveDiv.append(moveTable)
-    let moveRowHeader = document.createElement("tr")
-    moveRowHeader.style = "background-color: red; color: white;font-family: sans-serif"
-    let moveHeader0 = document.createElement("th")
-    moveHeader0.innerText = ""
-    let moveHeader1 = document.createElement("th")
-    moveHeader1.innerText = "Player"
-    let moveHeader2 = document.createElement("th")
-    moveHeader2.innerText = "Moves"
-    moveRowHeader.append(moveHeader0)
-    moveRowHeader.append(moveHeader1)
-    moveRowHeader.append(moveHeader2)
-    moveTable.append(moveRowHeader)
-
-    //moveScoreBoard.forEach(e => {
-    for (let i =0; i < 10 && i < moveScoreBoard.length; i++) {
-        let e = moveScoreBoard[i]
-        let moveRow = document.createElement("tr")
-        let moveData0 = document.createElement("td")
-        moveData0.innerText = `${i+1}`
-        let moveData1 = document.createElement("td")
-        moveData1.innerText = `${e.player}`
-        let moveData2 = document.createElement("td")
-        moveData2.innerText = `${e.moves}`
-        moveRow.append(moveData0)
-        moveRow.append(moveData1)
-        moveRow.append(moveData2)
-        moveTable.append(moveRow)
-    //});
+        //moveScoreBoard.forEach(e => {
+        for (let i =0; i < 10 && i < moveScoreBoard.length; i++) {
+            let e = moveScoreBoard[i]
+            let moveRow = document.createElement("tr")
+            let moveData0 = document.createElement("td")
+            moveData0.innerText = `${i+1}`
+            let moveData1 = document.createElement("td")
+            moveData1.innerText = `${e.player}`
+            let moveData2 = document.createElement("td")
+            moveData2.innerText = `${e.moves}`
+            moveRow.append(moveData0)
+            moveRow.append(moveData1)
+            moveRow.append(moveData2)
+            moveTable.append(moveRow)
+        //});
+        }
+        document.getElementById("moves").replaceWith(moveTable)
+        cansavemove = false;
     }
-    document.getElementById("moves").replaceWith(moveTable)
 }
 
 export const timeTableGenerator = function () {
+
+    timeScoreBoard.sort(function(a,b) {
+        return a.time - b.time
+    })
     let timeTable = document.createElement("table")
     timeTable.id = "times"
-    timeTable.style = "border: 2px solid black;border-collapse: collapse;width: 15%; background-color: powderblue; float: left; text-align: center"
+    timeTable.style = "border: 2px solid black;border-collapse: collapse;width: 15%; background-color: powderblue;text-align: center"
     //timeDiv.append(timeTable)
     let timeRowHeader = document.createElement("tr")
     timeRowHeader.style = "background-color: blue; font-family: sans-serif;color: white"
@@ -701,9 +741,13 @@ export const timeTableGenerator = function () {
 }
 
 export const moveTableGenerator = function () {
+
+    moveScoreBoard.sort(function(a,b) {
+        return a.moves - b.moves
+    })
     let moveTable = document.createElement("table")
     moveTable.id = "moves"
-    moveTable.style = "border: 2px solid black; width: 15%; border-collapse: collapse;background-color: tomato; float: left; text-align: center"
+    moveTable.style = "border: 2px solid black; width: 15%; border-collapse: collapse;background-color: tomato; text-align: center"
     let moveRowHeader = document.createElement("tr")
     moveRowHeader.style = "background-color: red; color: white;font-family: sans-serif"
     let moveHeader0 = document.createElement("th")
@@ -742,9 +786,12 @@ export const topTime = function () {
             console.log("butter1");
             const $scorest = $('#scorest');
             $scorest.empty()
-            $scorest.append(`<h1>Top Time Score for ${rdx.player} : ${rdx.time}</h1>`);
+            $scorest.append(`<h1>Top Time Score for ${rdx.player} : ${rdx.time} &nbsp;</h1>`);
             break;
         }
+        const $scorest = $('#scorest');
+        $scorest.empty()
+        $scorest.append(`<h1>Top Time Score for ${player.name} : Not Available &nbsp;</h1>`);
     }
 }
 
@@ -760,5 +807,8 @@ export const topMove = function () {
             $scoresm.append(`<h1>Top Move Score for ${rdx.player} : ${rdx.moves}</h1>`);
             break;
         }
+        const $scoresm = $('#scoresm');
+        $scoresm.empty()
+        $scoresm.append(`<h1>Top Move Score for ${player.name} : Not Available</h1>`);
     }
 }
