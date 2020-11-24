@@ -1,15 +1,16 @@
 import { levelArray } from "./getLevel.js"
 import { boardGet, boardSet } from "./backend-firestore.js"
-//import { firebaseUser } from "./login/login.js"
-
+import { centralDataBase } from "../firebaseCentral.js"
 
 let x = 13;
-let y = 13;
+let y = 13; 
 let board = [];
 
+let userNameWithoutGmail = localStorage.getItem('user');
+
 let player = {
-    //name: "substring(0,firebaseUser.email.indexOf('@'))",
-    name: "player.name",
+    //name: "player.name@".substring(0,firebaseUser.email.indexOf('@')),
+    name: userNameWithoutGmail.substring(0, userNameWithoutGmail.indexOf("@")),
     x: 0,
     y: 0,
     moves: 0,
@@ -35,59 +36,98 @@ let moveScoreBoard = [] //contains player object {player: name, moves: 000}
 $(function () {
     loadGame();
 })
-let cansavetime= false;
+let cansavetime = false;
 let cansavemove = false;
+
 let myTime = null;
 
 export async function loadGame() {
-
     const $root = $('#root')
+    console.log($root.data('user'))
     timeScoreBoard = await getTimeBoard(player.level);
     moveScoreBoard = await getMoveBoard(player.level);
     let timetable = document.createElement('table')
     timetable.id = 'times'
     let movetable = document.createElement('table')
     movetable.id = 'moves'
-    let topDiv = document.createElement('div')
-    topDiv.id = 'topDiv'
-    topDiv.style = 'display: flex; flex-direction: row; align-content: space-between'
-    topDiv.innerHTML = (`<div id = 'timeboard' style = 'align-self: flex-start'><h1>Time: ${player.time}</h1></div>`)
-    topDiv.innerHTML += (`<button id = 'time'>Save Time</button>`)
-    topDiv.innerHTML += (`<button id = 'move'>Save Move</button>`)
-    topDiv.innerHTML += (`<div id = 'moveboard' style = ''><h1>Moves: ${player.moves}</h1></div>`)
-    $root.append(topDiv)
-    let breakCol2 = document.createElement('div')
-    breakCol2.class = 'break'
-    breakCol2.style = 'flex-basis:100%'
-    $root.append(breakCol2)
-    $root.append(timetable)
-    $root.append(levelBuild(player.level))
-    $root.append(movetable)
-    let breakCol = document.createElement('div')
-    breakCol.class = 'break'
-    breakCol.style = 'flex-basis:100%'
-    $root.append(breakCol)
+
+    let leftDiv = document.createElement('div')
+    leftDiv.id = 'leftDiv'
+    leftDiv.style = 'display:flex; flex-direction: column;'
+    leftDiv.innerHTML = (`<h1 style=''>TIME</h1>`)
+    leftDiv.append(timetable)
+
+    let lefterDiv = document.createElement('div')
+    lefterDiv.id = 'lefterDiv'
+    lefterDiv.style = 'margin-top:20px;height:190px;font-size: 15px;background-color: crimson;display:flex; flex-direction: column;align-items: center; justify-content: flex-start'
+    lefterDiv.innerHTML = (`<div id='lefterDivButtons' style='width:250px;height:100px;display:flex; justify-content: space-around; align-items:center'><button id='LogOut' style='background-color: maroon; box-shadow: 0 6px #999;border-radius:32px; border:solid; color:white'>Log Out</button><button id='flush' style ='background-color: black; box-shadow: 0 6px #999;border-radius:32px; border:solid; color:white'>Delete Data</button></div>`)
+    lefterDiv.innerHTML += (`<h3 style="align-self: flex-start; font-size: 20px; color: white;font-family: Lucida; margin-left: 15px">Search:</h3>`)
+    lefterDiv.innerHTML += (`<form><input type='text' id='search' placeholder='search here'><input type='submit' value='Submit'></form>`)
+    leftDiv.append(lefterDiv)
+
+    $root.append(leftDiv) 
+
+
+    let midDiv = document.createElement('div')
+    midDiv.id = 'midDiv'
+    midDiv.style = 'display:flex; flex-direction: column; align-items: center    '
+    let midDivTop = document.createElement('div')
+    midDivTop.id = 'midDivTop'
+    midDivTop.style = 'display:flex;justify-content: space-between'
+    midDivTop.innerHTML = (`<button style='margin-bottom: 15px;box-shadow: 0 6px #999;border-radius:32px; border:solid;background-color: royalblue;color:white;font-family: Lucida Sans Unicode' id = 'time'>Save Time</button>`)
+    midDivTop.innerHTML += (`<div style='margin-right: 20px;margin-left:20px; width: 200px'id = 'timeboard'><h1>Time: ${player.time}</h1></div>`)
+    midDivTop.innerHTML += (`<div id="currlevel"><h1 style='text-align: center;font-weight: bold; font-family: Georgia'> Level: ${player.level}</h1></div>`)
+    midDivTop.innerHTML += (`<div style = 'text-align: center;margin-right: 20px;margin-left:20px; width: 150px' id = 'moveboard'><h1>Moves: ${player.moves}</h1></div>`)
+    midDivTop.innerHTML += (`<button style='box-shadow: 0 6px #999;    border-radius:32px; border:solid;background-color: red;color:white;font-family: Lucida Sans Unicode'id = 'move'>Save Move</button>`)
+    midDiv.append(midDivTop)
+    midDiv.append(levelBuild(player.level))
+    let buttonPanel = document.createElement('div')
+    buttonPanel.id = 'buttonPanel'
+    buttonPanel.style = 'margin-top: 10px;display:flex; justify-content: space-between; '
+    buttonPanel.innerHTML = `<button style='box-shadow: 0 6px #999;border-radius:32px;background-color: purple;color:white;font-family: Lucida Sans Unicode' id = 'previous'> Previous</button>
+                            <button style='box-shadow: 0 6px #999;border-radius:32px;background-color: darkorange;color:white;font-family: Lucida Sans Unicode' id = 'reset'>Reset</button>
+                            <button style='box-shadow: 0 6px #999;border-radius:32px;background-color: green;color:white;font-family: Lucida Sans Unicode'id = 'next'>Next</button>`
+
+    midDiv.append(buttonPanel)
+    $root.append(midDiv)
+
+    let rightDiv = document.createElement('div')
+    rightDiv.id = 'rightDiv'
+    rightDiv.style = 'display:flex; flex-direction: column;align-items:flex-end'
+    rightDiv.innerHTML = (`<h1 style=''>MOVES</h1>`)
+    rightDiv.append(movetable)
+    //$root.append(rightDiv)
+
+    let righterDiv = document.createElement('righterDiv')
+    righterDiv.id = 'righterDiv'
+    righterDiv.style = 'width:250px;font-family: Verdana; font-size: 15px;background-color: mediumspringgreen;margin-top:20px; margin-bottom: 250px;margin-left:20px; display:flex; flex-direction: column;'
+    righterDiv.innerHTML = (`<h3 style ="align-self:center">${player.name}`)
+    righterDiv.innerHTML += (`<div id = 'scorest' style="align-self:center;display:flex;flex-direction: column"></div>`)
+    righterDiv.innerHTML += (`<div id = 'scoresm' style="align-self:center;display:flex;flex-direction: column""></div>`)
+
+    //righterDiv.innerHTML += (`<h3 style ="margin-left:25px;margin-right:25px">Search:</h3>`)
+    //righterDiv.innerHTML += (`<form autocomplete="off" id = "searchform"><input style ="margin-left:25px;margin-right:25px" id="search" type="text"></form>`)
+    rightDiv.append(righterDiv)
+    $root.append(rightDiv)
+
     console.log(timeScoreBoard);
     console.log(moveScoreBoard);
     timeTableGenerator();
-    moveTableGenerator();  
-    window.setInterval(function () {
-        timeTableGenerator(); 
-        topTime();
-        topMove();      
-    }, 10000);
+    moveTableGenerator();
+    
 
     window.setInterval(function () {
-        moveTableGenerator()
+        cashmoneyglock();
+        timeTableGenerator();
+        moveTableGenerator();
         topTime();
         topMove();
+        
     }, 10000);
-    cansavetime= false;
-    cansavemove = false;
     $(document).keydown(async function (e) {
         switch (e.keyCode) { // move to seperate function and make it return something
             case 39:
-                e.preventDefault;
+                e.preventDefault();
                 if (!player.won) {
                     if (firstMove) {
                         stopWatch = Date.now();
@@ -105,7 +145,7 @@ export async function loadGame() {
                     if (doneMove) {
                         doneMove = false;
                         if (board[player.y][player.x + 1] != 0) {
-                            player.moves +=1;
+                            player.moves += 1;
                         }
                         const $moveboard = $('#moveboard');
                         $moveboard.empty();
@@ -116,7 +156,7 @@ export async function loadGame() {
 
                 break;
             case 38:
-                e.preventDefault;
+                e.preventDefault();
                 if (!player.won) {
                     if (firstMove) {
                         stopWatch = Date.now();
@@ -143,6 +183,7 @@ export async function loadGame() {
                 }
                 break;
             case 37:
+                e.preventDefault()
                 if (!player.won) {
                     if (firstMove) {
                         stopWatch = Date.now();
@@ -170,7 +211,7 @@ export async function loadGame() {
                 }
                 break;
             case 40:
-                e.preventDefault;
+                e.preventDefault();
                 if (!player.won) {
                     if (firstMove) {
                         stopWatch = Date.now();
@@ -189,7 +230,7 @@ export async function loadGame() {
                         if (board[player.y + 1][player.x] != 0) {
                             player.moves += 1
                         }
-                        
+
                         const $moveboard = $('#moveboard');
                         $moveboard.empty();
                         $moveboard.append(`<h1>Moves: ${player.moves}</h1>`);
@@ -198,33 +239,26 @@ export async function loadGame() {
                 }
                 break;
 
-            case 78: // Press N to go to next level
+            case 68: // Press D to go to next level
                 nextLevel()
-
                 break;
             // turn these into functions
-            case 82: // Press R to reset level
+            case 83: // Press S to reset level
                 resetBoard()
+                break
+
+            case 65: // Press A to go to previous level 
+                previousBoard()
+                break
+            case 70: // Press F to save time
+
+                timeUpdateBoard()
+                break
+            case 71: // Press G to save move
+                moveUpdateBoard()
                 break
         }
     })
-
-    $root.append(`<div id = 'buttonPanel' style='align-self: center'>
-        <button id = 'previous'> Previous</button>
-        <button id = 'reset'>Reset</button>
-        <button id = 'next'>Next</button>
-    </div>`)
-    
-    const $scores = $('#scores');
-
-    // place holder
-    let breakCol3 = document.createElement('div')
-    breakCol3.class = 'break'
-    breakCol3.style = 'flex-basis:100%'
-    $root.append(breakCol3)
-    
-    $root.append(`<div id = 'scorest'></div>`)
-    $root.append(`<div id = 'scoresm'></div>`)
 
     $root.on('click', "#previous", previousBoard);//self explantory
     $root.on('click', "#reset", resetBoard);
@@ -233,6 +267,8 @@ export async function loadGame() {
     $root.on('click', "#move", moveUpdateBoard);//add in new player object to the array, it also returns the updated array
     topTime();
     topMove();
+
+    $root.on('click', '#LogOut', gameLogOut)
 
     // create keyboard functionality all of them
 
@@ -294,6 +330,7 @@ export async function move(dirction) {
             // color what ever space that color
             // Depending on how it is animated and logic; move one space at a time
             $(findY).find(findX).attr('id', '')
+            //$(findY).find(findX).attr('src', '')
 
             if (board[player.y][player.x + 1] == 0) {
                 board[player.y][player.x] = 2;
@@ -306,15 +343,16 @@ export async function move(dirction) {
                     player.won = boardChecker()
                     if (player.won) {
                         console.log('Won')
-                        
+
                         stopWatch = Date.now() - stopWatch;
                         clearInterval(myTime);
                         player.time = stopWatch / 1000;
                         const $timeboard = $('#timeboard');
                         $timeboard.empty();
                         $timeboard.append(`<h1>Time: ${player.time}</h1>`);
-                        cansavetime= true;
+                        cansavetime = true;
                         cansavemove = true;
+                        console.log(player.time);
                     }
                 }
 
@@ -324,9 +362,53 @@ export async function move(dirction) {
                 findY = '.' + player.y;
                 findX = '.' + player.x;
                 $(findY).find(findX).attr('class', player.x + ' filled')
+                if (player.level == 2) {
+                    $(".filled").css('background-color', '#fdee73')
+                } else if (player.level == 3) {
+                    $(".filled").css('background-color', '#74bbfb')
+                } else if (player.level == 4) {
+                    $(".filled").css('background-color', '#ff7124')
+                } else if (player.level == 5) {
+                    $(".filled").css('background-color', '#ff66ff')
+                } else if (player.level == 6) {
+                    $(".filled").css('background-color', '#6600ff')
+                } else if (player.level == 7) {
+                    $(".filled").css('background-color', '#18d17b')
+                } else if (player.level == 8) {
+                    $(".filled").css('background-color', '#fe0002')
+                } else if (player.level == 9) {
+                    $(".filled").css('background-color', '#fcfc5d')
+                } else if (player.level == 10) {
+                    $(".filled").css('background-color', '#0cbfe9')
+                } else if (player.level == 11) {
+                    $(".filled").css('background-color', '#c9a0ff')
+                } else if (player.level == 12) {
+                    $(".filled").css('background-color', '#f28e1c')
+                } else if (player.level == 13) {
+                    $(".filled").css('background-color', '#fabfe4')
+                } else if (player.level == 14) {
+                    $(".filled").css('background-color', '#0add08')
+                } else if (player.level == 15) {
+                    $(".filled").css('background-color', '#ffc82a')
+                } else if (player.level == 16) {
+                    $(".filled").css('background-color', '#E52B50')
+                } else if (player.level == 17) {
+                    $(".filled").css('background-color', '#0bf9ea')
+                } else if (player.level == 18) {
+                    $(".filled").css('background-color', '#ff7f00')
+                } else if (player.level == 19) {
+                    $(".filled").css('background-color', 'pink')
+                } else if (player.level == 20) {
+                    $(".filled").css('background-color', 'greenyellow')
+                }
+                else if (player.level == 1) {
+                    $(".filled").css('background-color', 'greenyellow')
+                }
                 player.x += 1;
             }
             $(findY).find(findX).attr('id', 'player')
+            //$(findY).find(findX).attr('src', 'https://w7.pngwing.com/pngs/1023/586/png-transparent-color-wheel-complementary-colors-green-gamut-cercle-blue-orange-color.png')
+
 
         }, speed)
     } else if (dirction == 'up') {
@@ -346,15 +428,16 @@ export async function move(dirction) {
                     player.won = boardChecker()
                     if (player.won) {
                         console.log('Won')
-                
+
                         stopWatch = Date.now() - stopWatch;
                         clearInterval(myTime);
                         player.time = stopWatch / 1000;
                         const $timeboard = $('#timeboard');
                         $timeboard.empty();
                         $timeboard.append(`<h1>Time: ${player.time}</h1>`);
-                        cansavetime= true;
+                        cansavetime = true;
                         cansavemove = true;
+                        console.log(player.time);
                     }
                 }
 
@@ -364,6 +447,48 @@ export async function move(dirction) {
                 findY = '.' + player.y;
                 findX = '.' + player.x;
                 $(findY).find(findX).attr('class', player.x + ' filled')
+                if (player.level == 2) {
+                    $(".filled").css('background-color', '#fdee73')
+                } else if (player.level == 3) {
+                    $(".filled").css('background-color', '#74bbfb')
+                } else if (player.level == 4) {
+                    $(".filled").css('background-color', '#ff7124')
+                } else if (player.level == 5) {
+                    $(".filled").css('background-color', '#ff66ff')
+                } else if (player.level == 6) {
+                    $(".filled").css('background-color', '#6600ff')
+                } else if (player.level == 7) {
+                    $(".filled").css('background-color', '#18d17b')
+                } else if (player.level == 8) {
+                    $(".filled").css('background-color', '#fe0002')
+                } else if (player.level == 9) {
+                    $(".filled").css('background-color', '#fcfc5d')
+                } else if (player.level == 10) {
+                    $(".filled").css('background-color', '#0cbfe9')
+                } else if (player.level == 11) {
+                    $(".filled").css('background-color', '#c9a0ff')
+                } else if (player.level == 12) {
+                    $(".filled").css('background-color', '#f28e1c')
+                } else if (player.level == 13) {
+                    $(".filled").css('background-color', '#fabfe4')
+                } else if (player.level == 14) {
+                    $(".filled").css('background-color', '#0add08')
+                } else if (player.level == 15) {
+                    $(".filled").css('background-color', '#ffc82a')
+                } else if (player.level == 16) {
+                    $(".filled").css('background-color', '#E52B50')
+                } else if (player.level == 17) {
+                    $(".filled").css('background-color', '#0bf9ea')
+                } else if (player.level == 18) {
+                    $(".filled").css('background-color', '#ff7f00')
+                } else if (player.level == 19) {
+                    $(".filled").css('background-color', 'pink')
+                } else if (player.level == 20) {
+                    $(".filled").css('background-color', 'greenyellow')
+                }
+                else if (player.level == 1) {
+                    $(".filled").css('background-color', 'greenyellow')
+                }
                 player.y -= 1;
             }
             $(findY).find(findX).attr('id', 'player')
@@ -385,15 +510,16 @@ export async function move(dirction) {
                     player.won = boardChecker()
                     if (player.won) {
                         console.log('Won')
-                        
+
                         stopWatch = Date.now() - stopWatch;
                         clearInterval(myTime);
                         player.time = stopWatch / 1000;
                         const $timeboard = $('#timeboard');
                         $timeboard.empty();
                         $timeboard.append(`<h1>Time: ${player.time}</h1>`);
-                        cansavetime= true;
+                        cansavetime = true;
                         cansavemove = true;
+                        console.log(player.time);
                     }
                 }
 
@@ -403,6 +529,48 @@ export async function move(dirction) {
                 findY = '.' + player.y;
                 findX = '.' + player.x;
                 $(findY).find(findX).attr('class', player.x + ' filled')
+                if (player.level == 2) {
+                    $(".filled").css('background-color', '#fdee73')
+                } else if (player.level == 3) {
+                    $(".filled").css('background-color', '#74bbfb')
+                } else if (player.level == 4) {
+                    $(".filled").css('background-color', '#ff7124')
+                } else if (player.level == 5) {
+                    $(".filled").css('background-color', '#ff66ff')
+                } else if (player.level == 6) {
+                    $(".filled").css('background-color', '#6600ff')
+                } else if (player.level == 7) {
+                    $(".filled").css('background-color', '#18d17b')
+                } else if (player.level == 8) {
+                    $(".filled").css('background-color', '#fe0002')
+                } else if (player.level == 9) {
+                    $(".filled").css('background-color', '#fcfc5d')
+                } else if (player.level == 10) {
+                    $(".filled").css('background-color', '#0cbfe9')
+                } else if (player.level == 11) {
+                    $(".filled").css('background-color', '#c9a0ff')
+                } else if (player.level == 12) {
+                    $(".filled").css('background-color', '#f28e1c')
+                } else if (player.level == 13) {
+                    $(".filled").css('background-color', '#fabfe4')
+                } else if (player.level == 14) {
+                    $(".filled").css('background-color', '#0add08')
+                } else if (player.level == 15) {
+                    $(".filled").css('background-color', '#ffc82a')
+                } else if (player.level == 16) {
+                    $(".filled").css('background-color', '#E52B50')
+                } else if (player.level == 17) {
+                    $(".filled").css('background-color', '#0bf9ea')
+                } else if (player.level == 18) {
+                    $(".filled").css('background-color', '#ff7f00')
+                } else if (player.level == 19) {
+                    $(".filled").css('background-color', 'pink')
+                } else if (player.level == 20) {
+                    $(".filled").css('background-color', 'greenyellow')
+                }
+                else if (player.level == 1) {
+                    $(".filled").css('background-color', 'greenyellow')
+                }
                 player.x -= 1;
             }
             $(findY).find(findX).attr('id', 'player')
@@ -425,15 +593,16 @@ export async function move(dirction) {
                     player.won = boardChecker();
                     if (player.won) {
                         console.log('Won')
-                        
+
                         stopWatch = Date.now() - stopWatch;
                         clearInterval(myTime);
                         player.time = stopWatch / 1000;
                         const $timeboard = $('#timeboard');
                         $timeboard.empty();
                         $timeboard.append(`<h1>Time: ${player.time}</h1>`);
-                        cansavetime= true;
+                        cansavetime = true;
                         cansavemove = true;
+                        console.log(player.time);
                     }
                 }
 
@@ -443,6 +612,48 @@ export async function move(dirction) {
                 findY = '.' + player.y;
                 findX = '.' + player.x;
                 $(findY).find(findX).attr('class', player.x + ' filled')
+                if (player.level == 2) {
+                    $(".filled").css('background-color', '#fdee73')
+                } else if (player.level == 3) {
+                    $(".filled").css('background-color', '#74bbfb')
+                } else if (player.level == 4) {
+                    $(".filled").css('background-color', '#ff7124')
+                } else if (player.level == 5) {
+                    $(".filled").css('background-color', '#ff66ff')
+                } else if (player.level == 6) {
+                    $(".filled").css('background-color', '#6600ff')
+                } else if (player.level == 7) {
+                    $(".filled").css('background-color', '#18d17b')
+                } else if (player.level == 8) {
+                    $(".filled").css('background-color', '#fe0002')
+                } else if (player.level == 9) {
+                    $(".filled").css('background-color', '#fcfc5d')
+                } else if (player.level == 10) {
+                    $(".filled").css('background-color', '#0cbfe9')
+                } else if (player.level == 11) {
+                    $(".filled").css('background-color', '#c9a0ff')
+                } else if (player.level == 12) {
+                    $(".filled").css('background-color', '#f28e1c')
+                } else if (player.level == 13) {
+                    $(".filled").css('background-color', '#fabfe4')
+                } else if (player.level == 14) {
+                    $(".filled").css('background-color', '#0add08')
+                } else if (player.level == 15) {
+                    $(".filled").css('background-color', '#ffc82a')
+                } else if (player.level == 16) {
+                    $(".filled").css('background-color', '#E52B50')
+                } else if (player.level == 17) {
+                    $(".filled").css('background-color', '#0bf9ea')
+                } else if (player.level == 18) {
+                    $(".filled").css('background-color', '#ff7f00')
+                } else if (player.level == 19) {
+                    $(".filled").css('background-color', 'pink')
+                } else if (player.level == 20) {
+                    $(".filled").css('background-color', 'greenyellow')
+                }
+                else if (player.level == 1) {
+                    $(".filled").css('background-color', 'greenyellow')
+                }
                 player.y += 1;
             }
             $(findY).find(findX).attr('id', 'player')
@@ -500,12 +711,14 @@ export async function previousBoard() {
         topMove();
         cansavetime = false;
         cansavemove = false;
+        document.getElementById('currlevel').innerHTML = `<h1 style='font-weight: bold; font-family: Georgia'> Level: ${player.level}</h1>`
     }
 }
 
 export const resetBoard = function () {
     console.log('reset Level')
     //player.level += 1; // Go to Next Level
+    cashmoneyglock();
     player.won = false;
     player.time = 0;
     player.moves = 0;
@@ -556,47 +769,49 @@ export async function nextLevel() {
         topMove();
         cansavetime = false;
         cansavemove = false;
+        document.getElementById('currlevel').innerHTML = `<h1 style='font-weight: bold; font-family: Georgia'> Level: ${player.level}</h1>`
     }
 }
 
 export async function timeUpdateBoard() {
-    
+
     if (player.time == 0)
         return null
     let test = {
-        "player": "player.name",
+        "player": player.name,
         "time": player.time,
     }
-    if(cansavetime == true){
-        await updateBoard(player.level, "time", timeScoreBoard)
-        timeScoreBoard = await getTimeBoard(player.level);
+
+    if (cansavetime == true) {
+
         //let timeDiv = document.createElement("div")
         //timeDiv.id = "times"
 
         timeScoreBoard.push(test)
-        timeScoreBoard.sort(function(a,b) {
+        timeScoreBoard.sort(function (a, b) {
             return a.time - b.time
         })
-
+        await updateBoard(player.level, "time", timeScoreBoard)
+        timeScoreBoard = await getTimeBoard(player.level);
         console.log(timeScoreBoard)
         let timeTable = document.createElement("table")
         timeTable.id = "times"
-        timeTable.style = "border: 2px solid black;border-collapse: collapse;width: 15%; background-color: powderblue; text-align: center"
+        timeTable.style = "width: 250px;border:none;border-collapse: collapse; background-color: powderblue;text-align: center"
         //timeDiv.append(timeTable)
         let timeRowHeader = document.createElement("tr")
-        timeRowHeader.style = "background-color: blue; font-family: sans-serif;color: white"
+        timeRowHeader.style = "background-color: royalblue; font-family: sans-serif;color: white; text-align: left"
         let timeHeader0 = document.createElement("th")
         timeHeader0.innerText = ""
         let timeHeader1 = document.createElement("th")
         timeHeader1.innerText = "Player"
         let timeHeader2 = document.createElement("th")
         timeHeader2.innerText = "Time"
-        
+
         timeRowHeader.append(timeHeader0)
         timeRowHeader.append(timeHeader1)
         timeRowHeader.append(timeHeader2)
         timeTable.append(timeRowHeader)
-        
+
         /*
         lettimeTable2 = document.createElement("ol")
         timeTable2.id = "times"
@@ -604,15 +819,24 @@ export async function timeUpdateBoard() {
         */
         //timeScoreBoard.forEach(e => {
 
-        for (let i =0; i < 10 && i < timeScoreBoard.length; i++) {
+        for (let i = 0; i < 10; i++) {
             let e = timeScoreBoard[i]
             let timeRow = document.createElement("tr")
             let timeData0 = document.createElement("td")
-            timeData0.innerText = `${i+1}`
+            timeData0.innerText = `${i + 1}`
             let timeData1 = document.createElement("td")
-            timeData1.innerText = `${e.player}`
             let timeData2 = document.createElement("td")
-            timeData2.innerText = `${e.time}`
+            if (i >= timeScoreBoard.length) {
+                timeData0.style = "opacity: 50%"
+                timeData1.style = "opacity: 50%"
+                timeData2.style = "opacity:50%"
+                timeData1.innerText = 'N/A'
+                timeData2.innerText = 'N/A'
+            }
+            else {
+                timeData1.innerText = `${e.player}`
+                timeData2.innerText = `${e.time}`
+            }
             timeRow.append(timeData0)
             timeRow.append(timeData1)
             timeRow.append(timeData2)
@@ -622,26 +846,26 @@ export async function timeUpdateBoard() {
             timeRow2.innerText = `${e.player} ${e.time}`
             timeTable2.append(timeRow2)
             */
-        //});
+            //});
         }
         document.getElementById("times").replaceWith(timeTable)
-        cansavetime = false;
+        cansavetime = false
+        topTime();
     }
 }
 
 export async function moveUpdateBoard() {
     if (player.moves == 0)
         return null
-    
-    if(cansavemove == true){
+    if (cansavemove == true) {
         moveScoreBoard.push({
-            "player": "player.name",
+            "player": player.name,
             "moves": player.moves,
         })
-        moveScoreBoard.sort(function(a,b) {
+
+        moveScoreBoard.sort(function (a, b) {
             return a.moves - b.moves
         })
-
         await updateBoard(player.level, 'move', moveScoreBoard)
         moveScoreBoard = await getMoveBoard(player.level);
         console.log(moveScoreBoard);
@@ -650,10 +874,10 @@ export async function moveUpdateBoard() {
         //moveDiv.id = "moves"
         let moveTable = document.createElement("table")
         moveTable.id = "moves"
-        moveTable.style = "border: 2px solid black; width: 15%; border-collapse: collapse;background-color: tomato; text-align: center"
+        moveTable.style = "border: none;width: 250px;border-collapse: collapse;background-color: tomato; text-align: center"
         //moveDiv.append(moveTable)
         let moveRowHeader = document.createElement("tr")
-        moveRowHeader.style = "background-color: red; color: white;font-family: sans-serif"
+        moveRowHeader.style = "background-color: red; color: white;font-family: sans-serif; text-align: left"
         let moveHeader0 = document.createElement("th")
         moveHeader0.innerText = ""
         let moveHeader1 = document.createElement("th")
@@ -666,37 +890,46 @@ export async function moveUpdateBoard() {
         moveTable.append(moveRowHeader)
 
         //moveScoreBoard.forEach(e => {
-        for (let i =0; i < 10 && i < moveScoreBoard.length; i++) {
+        for (let i = 0; i < 10; i++) {
             let e = moveScoreBoard[i]
             let moveRow = document.createElement("tr")
             let moveData0 = document.createElement("td")
-            moveData0.innerText = `${i+1}`
+            moveData0.innerText = `${i + 1}`
             let moveData1 = document.createElement("td")
-            moveData1.innerText = `${e.player}`
             let moveData2 = document.createElement("td")
-            moveData2.innerText = `${e.moves}`
+            if (i >= moveScoreBoard.length) {
+                moveData1.style = "opacity: 50%"
+                moveData2.style = "opacity:50%"
+                moveData1.innerText = 'N/A'
+                moveData2.innerText = 'N/A'
+            }
+            else {
+                moveData1.innerText = `${e.player}`
+                moveData2.innerText = `${e.moves}`
+            }
             moveRow.append(moveData0)
             moveRow.append(moveData1)
             moveRow.append(moveData2)
             moveTable.append(moveRow)
-        //});
+            //});
         }
         document.getElementById("moves").replaceWith(moveTable)
-        cansavemove = false;
+        cansavemove = false
+        topMove();
     }
 }
 
 export const timeTableGenerator = function () {
 
-    timeScoreBoard.sort(function(a,b) {
+    timeScoreBoard.sort(function (a, b) {
         return a.time - b.time
     })
     let timeTable = document.createElement("table")
     timeTable.id = "times"
-    timeTable.style = "border: 2px solid black;border-collapse: collapse;width: 15%; background-color: powderblue;text-align: center"
+    timeTable.style = "border: none;width: 250px;border-collapse: collapse; background-color: powderblue;text-align: center"
     //timeDiv.append(timeTable)
     let timeRowHeader = document.createElement("tr")
-    timeRowHeader.style = "background-color: blue; font-family: sans-serif;color: white"
+    timeRowHeader.style = "background-color: royalblue; font-family: sans-serif;color: white; text-align: left"
     let timeHeader0 = document.createElement("th")
     timeHeader0.innerText = ""
     let timeHeader1 = document.createElement("th")
@@ -716,15 +949,25 @@ export const timeTableGenerator = function () {
     */
     //timeScoreBoard.forEach(e => {
 
-    for (let i =0; i < 10 && i < timeScoreBoard.length; i++) {
+    for (let i = 0; i < 10; i++) {
         let e = timeScoreBoard[i]
         let timeRow = document.createElement("tr")
+        timeRow.style = '.td {border:none}'
         let timeData0 = document.createElement("td")
-        timeData0.innerText = `${i+1}`
+        timeData0.innerText = `${i + 1}`
         let timeData1 = document.createElement("td")
-        timeData1.innerText = `${e.player}`
         let timeData2 = document.createElement("td")
-        timeData2.innerText = `${e.time}`
+        if (i >= timeScoreBoard.length) {
+            timeData0.style = "opacity: 50%"
+            timeData1.style = "opacity: 50%"
+            timeData2.style = "opacity:50%"
+            timeData1.innerText = 'N/A'
+            timeData2.innerText = 'N/A'
+        }
+        else {
+            timeData1.innerText = `${e.player}`
+            timeData2.innerText = `${e.time}`
+        }
         timeRow.append(timeData0)
         timeRow.append(timeData1)
         timeRow.append(timeData2)
@@ -734,22 +977,22 @@ export const timeTableGenerator = function () {
         timeRow2.innerText = `${e.player} ${e.time}`
         timeTable2.append(timeRow2)
         */
-    //});
+        //});
     }
-    document.getElementById("times").replaceWith(timeTable)  
+    document.getElementById("times").replaceWith(timeTable)
 
 }
 
 export const moveTableGenerator = function () {
-
-    moveScoreBoard.sort(function(a,b) {
+    
+    moveScoreBoard.sort(function (a, b) {
         return a.moves - b.moves
     })
     let moveTable = document.createElement("table")
     moveTable.id = "moves"
-    moveTable.style = "border: 2px solid black; width: 15%; border-collapse: collapse;background-color: tomato; text-align: center"
+    moveTable.style = "border: none;width: 250px;border-collapse: collapse;background-color: tomato; text-align: center"
     let moveRowHeader = document.createElement("tr")
-    moveRowHeader.style = "background-color: red; color: white;font-family: sans-serif"
+    moveRowHeader.style = "background-color: red; color: white;font-family: sans-serif; text-align:left"
     let moveHeader0 = document.createElement("th")
     moveHeader0.innerText = ""
     let moveHeader1 = document.createElement("th")
@@ -760,55 +1003,75 @@ export const moveTableGenerator = function () {
     moveRowHeader.append(moveHeader1)
     moveRowHeader.append(moveHeader2)
     moveTable.append(moveRowHeader)
-    for (let i =0; i < 10 && i < moveScoreBoard.length; i++) {
+    for (let i = 0; i < 10; i++) {
         let e = moveScoreBoard[i]
         let moveRow = document.createElement("tr")
         let moveData0 = document.createElement("td")
-        moveData0.innerText = `${i+1}`
+        moveData0.innerText = `${i + 1}`
         let moveData1 = document.createElement("td")
-        moveData1.innerText = `${e.player}`
         let moveData2 = document.createElement("td")
-        moveData2.innerText = `${e.moves}`
+        if (i >= moveScoreBoard.length) {
+            moveData1.style = "opacity: 50%"
+            moveData2.style = "opacity:50%"
+            moveData1.innerText = 'N/A'
+            moveData2.innerText = 'N/A'
+        }
+        else {
+            moveData1.innerText = `${e.player}`
+            moveData2.innerText = `${e.moves}`
+        }
         moveRow.append(moveData0)
         moveRow.append(moveData1)
         moveRow.append(moveData2)
         moveTable.append(moveRow)
     }
     document.getElementById("moves").replaceWith(moveTable)
+
 }
 
 export const topTime = function () {
-    console.log("butter");
-    for (let i =0; i < timeScoreBoard.length; i++){
+    for (let i = 0; i < timeScoreBoard.length; i++) {
         let rdx = timeScoreBoard[i]
-        console.log(typeof player.name);
-        if(rdx.player == player.name){
-            console.log("butter1");
+        if (rdx.player == player.name) {
             const $scorest = $('#scorest');
             $scorest.empty()
-            $scorest.append(`<h1>Top Time Score for ${rdx.player} : ${rdx.time} &nbsp;</h1>`);
+            $scorest.append(`<h3 style="align-self:center">Top Time Score: </h1>`);
+            $scorest.append(`<h3 style="color: darkblue;align-self:center">${rdx.time}</h3>`)
             break;
         }
         const $scorest = $('#scorest');
         $scorest.empty()
-        $scorest.append(`<h1>Top Time Score for ${player.name} : Not Available &nbsp;</h1>`);
+        $scorest.append(`<h3 style="align-self:center">Top Time Score: </h1>`);
+        $scorest.append(`<h3 style="color: darkblue;align-self:center"> N/A</h3>`)
     }
 }
 
 export const topMove = function () {
-    console.log("cheese");
-    for (let i =0; i < moveScoreBoard.length; i++){
+    for (let i = 0; i < moveScoreBoard.length; i++) {
         let rdx = moveScoreBoard[i]
-        console.log(typeof player.name)
-        if(rdx.player == player.name){
-            console.log("cheese1");
+        if (rdx.player == player.name) {
             const $scoresm = $('#scoresm');
             $scoresm.empty()
-            $scoresm.append(`<h1>Top Move Score for ${rdx.player} : ${rdx.moves}</h1>`);
+            $scoresm.append(`<h3 style="align-self:center" >Top Move Score: </h1>`);
+            $scoresm.append(`<h3 style="color: darkred;align-self:center">${rdx.moves}</h3>`)
             break;
         }
         const $scoresm = $('#scoresm');
         $scoresm.empty()
-        $scoresm.append(`<h1>Top Move Score for ${player.name} : Not Available</h1>`);
+        $scoresm.append(`<h3 style="align-self:center">Top Move Score:</h1>`);
+        $scoresm.append(`<h3 style="color: darkred;align-self:center">N/A</h3>`)
     }
+}
+
+export const gameLogOut = function () {
+    // logOut(); 
+    window.localStorage.removeItem('user')
+    let firebase = centralDataBase();
+    firebase.auth().signOut();
+    window.location.href = '../login'
+}
+
+export async function cashmoneyglock() {
+    timeScoreBoard = await getTimeBoard(player.level);
+    moveScoreBoard = await getMoveBoard(player.level);
 }
